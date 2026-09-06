@@ -1,0 +1,50 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  background: #000;
+}
+
+html {
+  @apply font-mono;
+}
+
+body {
+  @apply bg-void font-mono text-[12px] leading-tight text-fg antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: #ffb000;
+  color: #000;
+}
+
+svg text,
+svg tspan {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+}
+
+input,
+button,
+select,
+textarea {
+  border-radius: 0;
+}
+
+input[type="text"],
+input[type="search"] {
+  @apply border border-hair bg-void px-2 py-1 font-mono text-[12px] text-fg outline-none;
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus {
+  @apply border-label;
+}

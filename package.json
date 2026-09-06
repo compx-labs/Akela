@@ -1,0 +1,23 @@
+{
+  "name": "akela",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @akela/web",
+    "build": "npm run build -w @akela/web",
+    "typecheck": "npm run typecheck -w @akela/web",
+    "lint": "npm run lint -w @akela/web"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
+  "packageManager": "npm@10.8.2",
+  "overrides": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
