@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import AgentInspector from "../components/AgentInspector";
 import ChainGlyphs from "../components/ChainGlyphs";
+import MarkKeys from "../components/MarkKeys";
 import SplitInspect, { InspectorEmpty } from "../components/SplitInspect";
 import StatusGlyph from "../components/StatusGlyph";
+import { useMarks } from "../hooks/useMarks";
 import { agentRowClass, useAgentSelection } from "../hooks/useAgentSelection";
 import { formatScore, formatUsd } from "../lib/format";
 import { listAgents } from "../lib/mockSeries";
@@ -23,7 +25,15 @@ export default function AgentsPage() {
         agent.status.includes(q),
     );
   }, [query]);
-  const { selected, selectedId, select } = useAgentSelection(agents);
+  const { markedIds, toggleMark, clearMarks } = useMarks();
+  const { selected, selectedId, select } = useAgentSelection(agents, { onSpace: toggleMark });
+
+  const onSelect = (id: string, event: MouseEvent<HTMLTableRowElement>) => {
+    if (event.shiftKey) {
+      toggleMark(id);
+    }
+    select(id);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -46,55 +56,69 @@ export default function AgentsPage() {
         >
           Register
         </Link>
+        <MarkKeys
+          canMark={Boolean(selectedId)}
+          markCount={markedIds.length}
+          onMark={() => {
+            if (selectedId) {
+              toggleMark(selectedId);
+            }
+          }}
+          onClear={clearMarks}
+        />
       </div>
       <div className="flex min-h-0 flex-1 border-x border-hair">
         <SplitInspect
-        list={
-          <div className="min-h-0 flex-1 overflow-auto">
-            <table className="w-full border-collapse text-left text-[12px]">
-              <thead className="sticky top-0 bg-panel">
-                <tr className="border-b border-hair text-[10px] font-semibold uppercase tracking-wider text-muted">
-                  <th className="px-2 py-1">Agent</th>
-                  <th className="px-2 py-1">Chains</th>
-                  <th className="px-2 py-1">Status</th>
-                  <th className="px-2 py-1 text-right text-label">Value $</th>
-                  <th className="px-2 py-1 text-right">Score</th>
-                  <th className="px-2 py-1">Claim</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((agent) => {
-                  const on = agent.id === selectedId;
-                  return (
-                    <tr
-                      key={agent.id}
-                      data-agent-id={agent.id}
-                      aria-selected={on}
-                      onClick={() => select(agent.id)}
-                      className={agentRowClass(on)}
-                    >
-                      <td className={`px-2 ${on ? "" : "text-fg"}`}>{agent.name}</td>
-                      <td className="px-2">
-                        <ChainGlyphs chains={agent.chains} />
-                      </td>
-                      <td className="px-2">
-                        <StatusGlyph status={agent.status} />
-                      </td>
-                      <td className={`px-2 text-right tabular-nums ${on ? "" : "text-fg"}`}>
-                        {formatUsd(agent.valueUsd)}
-                      </td>
-                      <td className={`px-2 text-right tabular-nums ${on ? "" : "text-fg"}`}>
-                        {formatScore(agent.score)}
-                      </td>
-                      <td className={`px-2 text-[10px] uppercase ${on ? "" : "text-cyan"}`}>registered</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        }
-        detail={selected ? <AgentInspector agent={selected} /> : <InspectorEmpty />}
+          list={
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="w-full border-collapse text-left text-[12px]">
+                <thead className="sticky top-0 bg-panel">
+                  <tr className="border-b border-hair text-[10px] font-semibold uppercase tracking-wider text-muted">
+                    <th className="px-2 py-1">Agent</th>
+                    <th className="px-2 py-1">Chains</th>
+                    <th className="px-2 py-1">Status</th>
+                    <th className="px-2 py-1 text-right text-label">Value $</th>
+                    <th className="px-2 py-1 text-right">Score</th>
+                    <th className="px-2 py-1">Claim</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agents.map((agent) => {
+                    const on = agent.id === selectedId;
+                    const marked = markedIds.includes(agent.id);
+                    return (
+                      <tr
+                        key={agent.id}
+                        data-agent-id={agent.id}
+                        aria-selected={on}
+                        onClick={(event) => onSelect(agent.id, event)}
+                        className={agentRowClass(on, marked)}
+                      >
+                        <td className={`px-2 ${on ? "" : "text-fg"}`}>
+                          {marked ? <span className="mr-1 text-cyan">[*]</span> : null}
+                          {agent.name}
+                        </td>
+                        <td className="px-2">
+                          <ChainGlyphs chains={agent.chains} />
+                        </td>
+                        <td className="px-2">
+                          <StatusGlyph status={agent.status} />
+                        </td>
+                        <td className={`px-2 text-right tabular-nums ${on ? "" : "text-fg"}`}>
+                          {formatUsd(agent.valueUsd)}
+                        </td>
+                        <td className={`px-2 text-right tabular-nums ${on ? "" : "text-fg"}`}>
+                          {formatScore(agent.score)}
+                        </td>
+                        <td className={`px-2 text-[10px] uppercase ${on ? "" : "text-cyan"}`}>registered</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          }
+          detail={selected ? <AgentInspector agent={selected} /> : <InspectorEmpty />}
         />
       </div>
     </div>

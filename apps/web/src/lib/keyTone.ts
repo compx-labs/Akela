@@ -21,6 +21,10 @@ export const TONE: Record<ViewTone, { idle: string; active: string }> = {
     idle: "border-fg bg-void text-fg hover:bg-fg/10",
     active: "border-fg bg-fg text-black",
   },
+  violet: {
+    idle: "border-graph bg-void text-graph hover:bg-graph/10",
+    active: "border-graph bg-graph text-graph-ink",
+  },
 };
 
 export function toneClass(tone: ViewTone, active: boolean): string {

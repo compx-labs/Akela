@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useMarks } from "../hooks/useMarks";
 import { VIEWS } from "../lib/nav";
 import CommandStrip from "./CommandStrip";
 import HelpOverlay from "./HelpOverlay";
@@ -10,11 +11,16 @@ export default function TerminalShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [help, setHelp] = useState(false);
+  const { clearMarks } = useMarks();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setHelp(false);
+        if (help) {
+          setHelp(false);
+          return;
+        }
+        clearMarks();
         return;
       }
       if (event.key === "F1") {
@@ -31,7 +37,7 @@ export default function TerminalShell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
+  }, [navigate, help, clearMarks]);
 
   return (
     <div className="relative flex h-screen min-w-[1280px] flex-col bg-void text-fg">

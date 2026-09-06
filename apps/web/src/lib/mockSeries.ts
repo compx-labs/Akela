@@ -14,13 +14,20 @@ export const SPARK: Record<MetricId, string> = {
   activity: "#3cff6b",
 };
 
-function makeSeries(seed: number, points: number, base: number, amplitude: number): SeriesPoint[] {
+function makeSeries(
+  seed: number,
+  points: number,
+  base: number,
+  amplitude: number,
+  signed = false,
+): SeriesPoint[] {
   const out: SeriesPoint[] = [];
   for (let i = 0; i < points; i += 1) {
     const drift = (i / points) * amplitude * 0.35;
     const wave = Math.sin(i / 2.4 + seed) * amplitude;
     const noise = Math.sin(i * 1.7 + seed * 2) * amplitude * 0.18;
-    const v = Math.max(0, base + drift + wave + noise);
+    const raw = base + drift + wave + noise;
+    const v = signed ? raw : Math.max(0, raw);
     out.push({ t: `t${i + 1}`, v: Math.round(v * 100) / 100 });
   }
   return out;
@@ -508,7 +515,7 @@ export function sparkRows(metric: Metric, windowId: WindowId): SeriesPoint[] {
   return metric.series[windowId];
 }
 
-export type AgentSparkKind = "value" | "volume" | "score";
+export type AgentSparkKind = "value" | "volume" | "score" | "rising" | "trust" | "consistency";
 
 function agentSeed(id: string, kind: string): number {
   let h = 2166136261;
@@ -521,10 +528,42 @@ function agentSeed(id: string, kind: string): number {
 }
 
 export function agentSparkValues(agent: AgentSummary, kind: AgentSparkKind, windowId: "7d" | "30d"): number[] {
-  const base = kind === "value" ? agent.valueUsd : kind === "volume" ? agent.volumeUsd : agent.score;
-  const amp = Math.max(base * 0.14, kind === "score" ? 5 : 90);
+  const bases: Record<AgentSparkKind, number> = {
+    value: agent.valueUsd,
+    volume: agent.volumeUsd,
+    score: agent.score,
+    rising: agent.rising7d,
+    trust: agent.trust,
+    consistency: agent.consistency,
+  };
+  const base = bases[kind];
+  const amp =
+    kind === "rising"
+      ? Math.max(Math.abs(base) * 0.45, 3)
+      : kind === "consistency"
+        ? 0.12
+        : kind === "score"
+          ? Math.max(base * 0.14, 5)
+          : Math.max(base * 0.14, 90);
   const points = windowId === "7d" ? 14 : 30;
-  return makeSeries(agentSeed(agent.id, kind), points, base * 0.92, amp).map((point) => point.v);
+  return makeSeries(agentSeed(agent.id, kind), points, kind === "rising" ? base * 0.7 : base * 0.92, amp, kind === "rising").map(
+    (point) => point.v,
+  );
+}
+
+export const MARK_LIMIT = 8;
+export const CHART_CAP = 10;
+
+export type RankMetric = "valueUsd" | "rising7d" | "trust" | "consistency";
+
+export function topAgents(metric: RankMetric, cap = CHART_CAP): AgentSummary[] {
+  const n = Math.min(CHART_CAP, cap);
+  return [...MOCK_AGENTS].sort((a, b) => Number(b[metric]) - Number(a[metric])).slice(0, n);
+}
+
+export function agentsByIds(ids: string[]): AgentSummary[] {
+  const map = new Map(MOCK_AGENTS.map((agent) => [agent.id, agent]));
+  return ids.map((id) => map.get(id)).filter((agent): agent is AgentSummary => Boolean(agent));
 }
 
 export function agentLastSeen(agent: AgentSummary): string {

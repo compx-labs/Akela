@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AgentSummary } from "../types";
 
-const F_KEYS = new Set(["F1", "F2", "F3", "F4", "F5", "F6"]);
+const F_KEYS = new Set(["F1", "F2", "F3", "F4", "F5", "F6", "F7"]);
 
-export function useAgentSelection(agents: AgentSummary[]) {
+export function useAgentSelection(
+  agents: AgentSummary[],
+  options?: { onSpace?: (id: string) => void },
+) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const onSpace = options?.onSpace;
 
   const selected = useMemo(
     () => agents.find((agent) => agent.id === selectedId) ?? null,
@@ -20,12 +24,19 @@ export function useAgentSelection(agents: AgentSummary[]) {
       if (F_KEYS.has(event.key) || event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
-      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
-        return;
-      }
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) {
+        return;
+      }
+      if (event.key === " " || event.code === "Space") {
+        if (selectedId && onSpace) {
+          event.preventDefault();
+          onSpace(selectedId);
+        }
+        return;
+      }
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
         return;
       }
       if (agents.length === 0) {
@@ -43,7 +54,7 @@ export function useAgentSelection(agents: AgentSummary[]) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [agents, selectedId]);
+  }, [agents, selectedId, onSpace]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -56,9 +67,10 @@ export function useAgentSelection(agents: AgentSummary[]) {
   return { selected, selectedId, select };
 }
 
-export function agentRowClass(selected: boolean): string {
+export function agentRowClass(selected: boolean, marked = false): string {
   return [
-    "h-[22px] cursor-pointer border-b border-hair/80",
+    "h-[22px] cursor-pointer select-none border-b border-hair/80",
     selected ? "bg-amber text-amber-ink" : "hover:bg-fg/[0.04]",
+    marked ? "shadow-[inset_3px_0_0_0_#3ecfff]" : "",
   ].join(" ");
 }

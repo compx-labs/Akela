@@ -25,6 +25,9 @@ export default function HelpOverlay({ onClose }: { onClose: () => void }) {
           </p>
           <p className="text-[10px] uppercase tracking-wide text-label">This is a model, not an offer.</p>
           <p className="text-muted">{HINTS.join(" · ")}</p>
+          <p className="text-muted">
+            Shift+click or Space marks a row (max 8). GRAPH compares marks. Esc clears marks.
+          </p>
         </div>
       </section>
     </div>

@@ -49,6 +49,11 @@ const config: Config = {
           dim: "#1a6a88",
           ink: "#001018",
         },
+        graph: {
+          DEFAULT: "#e879f9",
+          dim: "#7a3d86",
+          ink: "#140018",
+        },
         key: {
           home: "#ffb000",
           boards: "#ff7a1a",

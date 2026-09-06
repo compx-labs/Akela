@@ -36,3 +36,10 @@ export function formatMult(value: number): string {
 export function formatScore(value: number): string {
   return value.toFixed(1);
 }
+
+export function shortAgent(name: string): string {
+  if (name.length <= 11) {
+    return name;
+  }
+  return `${name.slice(0, 9)}…`;
+}

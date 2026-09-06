@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import type { AgentSummary, BoardId } from "../types";
 import { formatDelta, formatMult, formatScore, formatUsd } from "../lib/format";
 import { agentRowClass } from "../hooks/useAgentSelection";
@@ -11,7 +12,8 @@ type RankTableProps = {
   highlight?: BoardId | "value";
   showStatus?: boolean;
   selectedId?: string | null;
-  onSelect?: (id: string) => void;
+  markedIds?: string[];
+  onSelect?: (id: string, event: MouseEvent<HTMLTableRowElement>) => void;
 };
 
 const COLS: Array<{ id: ColId; label: string; align: "left" | "right"; board?: BoardId }> = [
@@ -32,6 +34,7 @@ export default function RankTable({
   highlight = "value",
   showStatus = false,
   selectedId = null,
+  markedIds = [],
   onSelect,
 }: RankTableProps) {
   const cols = COLS.filter((col) => col.id !== "status" || showStatus);
@@ -60,20 +63,24 @@ export default function RankTable({
         <tbody>
           {agents.map((agent, index) => {
             const selected = agent.id === selectedId;
+            const marked = markedIds.includes(agent.id);
             return (
               <tr
                 key={agent.id}
                 data-agent-id={agent.id}
                 aria-selected={selected}
-                onClick={() => onSelect?.(agent.id)}
-                className={agentRowClass(selected)}
+                onClick={(event) => onSelect?.(agent.id, event)}
+                className={agentRowClass(selected, marked)}
               >
                 <td
                   className={`w-8 px-2 font-medium tabular-nums ${selected ? "" : index === 0 ? "text-label" : "text-muted"}`}
                 >
                   {index + 1}
                 </td>
-                <td className={`max-w-0 truncate px-2 ${selected ? "" : "text-fg"}`}>{agent.name}</td>
+                <td className={`max-w-0 truncate px-2 ${selected ? "" : "text-fg"}`}>
+                  {marked ? <span className="mr-1 text-cyan">[*]</span> : null}
+                  {agent.name}
+                </td>
                 <td className="w-16 px-2">
                   <ChainGlyphs chains={agent.chains} />
                 </td>

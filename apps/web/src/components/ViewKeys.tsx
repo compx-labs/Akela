@@ -4,7 +4,7 @@ import { toneClass } from "../lib/keyTone";
 
 export default function ViewKeys() {
   return (
-    <nav aria-label="Primary" className="flex shrink-0 items-stretch gap-1 border-b border-hair bg-void px-1 py-1">
+    <nav aria-label="Primary" className="flex shrink-0 flex-nowrap items-stretch gap-1 overflow-x-auto border-b border-hair bg-void px-1 py-1">
       {VIEWS.map((view) => (
         <NavLink
           key={view.id}

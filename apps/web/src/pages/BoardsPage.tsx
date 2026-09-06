@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import AgentInspector from "../components/AgentInspector";
+import MarkKeys from "../components/MarkKeys";
 import RankTable from "../components/RankTable";
 import SplitInspect, { InspectorEmpty } from "../components/SplitInspect";
+import { useMarks } from "../hooks/useMarks";
 import { useAgentSelection } from "../hooks/useAgentSelection";
 import { rankedAgents } from "../lib/mockSeries";
 import type { BoardId } from "../types";
@@ -17,8 +19,8 @@ const BOARDS: Array<{ id: BoardId; label: string; tone: ViewTone }> = [
 ];
 
 const COPY: Record<BoardId, string> = {
-  value: "Akela Value $  ·  (a×held + b×volume) × consistency  ·  model not an offer",
-  score: "Akela Score  ·  0.35 activity + 0.40 usefulness + 0.25 trust",
+  value: "Akela Value $  ·  model not an offer",
+  score: "Akela Score  ·  0.35 act + 0.40 use + 0.25 trust",
   rising: "7d Value delta  ·  green up / red down",
   trusted: "Trust (held)  ·  average equity held",
   active: "Activity  ·  on-chain cadence / active days",
@@ -27,7 +29,15 @@ const COPY: Record<BoardId, string> = {
 export default function BoardsPage() {
   const [board, setBoard] = useState<BoardId>("value");
   const agents = useMemo(() => rankedAgents(board), [board]);
-  const { selected, selectedId, select } = useAgentSelection(agents);
+  const { markedIds, toggleMark, clearMarks } = useMarks();
+  const { selected, selectedId, select } = useAgentSelection(agents, { onSpace: toggleMark });
+
+  const onSelect = (id: string, event: MouseEvent<HTMLTableRowElement>) => {
+    if (event.shiftKey) {
+      toggleMark(id);
+    }
+    select(id);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -45,11 +55,30 @@ export default function BoardsPage() {
             {item.label}
           </button>
         ))}
-        <p className="ml-3 truncate text-[10px] uppercase tracking-wide text-muted">{COPY[board]}</p>
+        <p className="ml-2 min-w-0 flex-1 truncate text-[10px] uppercase tracking-wide text-muted">{COPY[board]}</p>
+        <MarkKeys
+          canMark={Boolean(selectedId)}
+          markCount={markedIds.length}
+          onMark={() => {
+            if (selectedId) {
+              toggleMark(selectedId);
+            }
+          }}
+          onClear={clearMarks}
+        />
       </div>
       <div className="flex min-h-0 flex-1 border-x border-hair">
         <SplitInspect
-          list={<RankTable agents={agents} highlight={board} showStatus selectedId={selectedId} onSelect={select} />}
+          list={
+            <RankTable
+              agents={agents}
+              highlight={board}
+              showStatus
+              selectedId={selectedId}
+              markedIds={markedIds}
+              onSelect={onSelect}
+            />
+          }
           detail={selected ? <AgentInspector agent={selected} /> : <InspectorEmpty />}
         />
       </div>
