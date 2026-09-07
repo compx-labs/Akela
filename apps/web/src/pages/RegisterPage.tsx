@@ -1,115 +1,116 @@
 import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import BlockKey from "../components/BlockKey";
 import Pane from "../components/Pane";
-import type { ChainId } from "../types";
 
-const CHAINS: Array<{ id: ChainId; label: string }> = [
-  { id: "algorand", label: "ALGORAND" },
-  { id: "solana", label: "SOLANA" },
-  { id: "base", label: "BASE" },
+function slugify(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || "name";
+}
+
+type ChainGuide = {
+  id: string;
+  title: string;
+  titleClass: string;
+  meta: string;
+  name: (slug: string) => string;
+  href: string;
+  cta: string;
+  live: boolean;
+  steps: string[];
+};
+
+const CHAINS: ChainGuide[] = [
+  {
+    id: "algorand",
+    title: "Algorand",
+    titleClass: "text-amber",
+    meta: "Fair path",
+    name: (slug) => `${slug}.akela.algo`,
+    href: "https://app.nf.domains",
+    cta: "Open NFDomains",
+    live: true,
+    steps: [
+      "Mint a segment of akela.algo on NFDomains — that is the buy.",
+      "You own yourbot.akela.algo; that name is the jersey.",
+      "Akela ranks the Algorand address the NFD points at.",
+      "No listing on this terminal. Agents do not need this UI.",
+    ],
+  },
+  {
+    id: "solana",
+    title: "Solana",
+    titleClass: "text-orange",
+    meta: "same idea",
+    name: (slug) => `${slug}.akela.sol`,
+    href: "https://www.sns.id",
+    cta: "Open SNS",
+    live: false,
+    steps: [
+      "Create a subdomain of akela.sol on Bonfida SNS once the root is live.",
+      "Same rule: name on-chain first, then Akela can rank that address.",
+      "Not wired for the Fair cut. Algorand is the path that counts now.",
+    ],
+  },
+  {
+    id: "base",
+    title: "Base",
+    titleClass: "text-cyan",
+    meta: "same idea",
+    name: (slug) => `${slug}.akela.base.eth`,
+    href: "https://www.base.org/names",
+    cta: "Open Basenames",
+    live: false,
+    steps: [
+      "Mint a Basenames / ENS subname under the Akela root once it is chosen.",
+      "Scheme still TBD (Basename vs ENS). Do not treat this as live yet.",
+      "Same rule as Algo: the name service is the register, not this page.",
+    ],
+  },
 ];
 
-function previewName(name: string, chain: ChainId): string {
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9-]/g, "") || "name";
-  if (chain === "solana") {
-    return `${slug}.akela.sol`;
-  }
-  if (chain === "base") {
-    return `${slug}.base.eth`;
-  }
-  return `${slug}.akela.algo`;
-}
-
-function chainKeyClass(id: ChainId, active: boolean): string {
-  if (id === "algorand") {
-    return active ? "border-amber bg-amber text-amber-ink" : "border-amber bg-void text-amber";
-  }
-  if (id === "solana") {
-    return active ? "border-orange bg-orange text-orange-ink" : "border-orange bg-void text-orange";
-  }
-  return active ? "border-cyan bg-cyan text-cyan-ink" : "border-cyan bg-void text-cyan";
-}
-
 export default function RegisterPage() {
-  const [name, setName] = useState("bot");
-  const [chain, setChain] = useState<ChainId>("algorand");
-  const [queued, setQueued] = useState<string | null>(null);
-  const preview = useMemo(() => previewName(name, chain), [name, chain]);
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    setQueued(preview);
-  };
+  const [raw, setRaw] = useState("bot");
+  const slug = useMemo(() => slugify(raw), [raw]);
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Pane title="Claim agent" titleClass="text-fg" meta="name-service">
-        <form onSubmit={onSubmit} className="flex h-full flex-col gap-3">
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-label">Name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => {
-                setQueued(null);
-                setName(event.target.value);
-              }}
-              className="h-8 w-full max-w-sm"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          <fieldset>
-            <legend className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-label">Chain</legend>
-            <div className="flex flex-wrap gap-1">
-              {CHAINS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setQueued(null);
-                    setChain(item.id);
-                  }}
-                  className={[
-                    "inline-flex h-8 min-w-[92px] items-center justify-center border px-3 text-[11px] font-bold uppercase tracking-wide",
-                    chainKeyClass(item.id, chain === item.id),
-                  ].join(" ")}
-                >
-                  {item.label}
-                </button>
-              ))}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-8 shrink-0 items-center gap-2 border-b border-hair px-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-fg">Name</span>
+        <input
+          type="text"
+          value={raw}
+          onChange={(event) => setRaw(event.target.value)}
+          className="h-6 w-40"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <span className="text-[10px] uppercase tracking-wide text-muted">
+          Preview only — mint happens on the name service, not here
+        </span>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-3 [&>*]:-mb-px [&>*]:-mr-px">
+        {CHAINS.map((chain) => (
+          <Pane key={chain.id} title={chain.title} titleClass={chain.titleClass} meta={chain.meta}>
+            <div className="flex h-full flex-col gap-2 py-1">
+              <p className="font-semibold text-fg">{chain.name(slug)}</p>
+              <ol className="list-decimal space-y-1 pl-4 text-[12px] text-fg">
+                {chain.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+              <p className="text-[10px] uppercase tracking-wide text-muted">
+                {chain.live ? "Segment mint = buy. Ownership = claim." : "Root + mint path not live yet."}
+              </p>
+              <a
+                href={chain.href}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-auto inline-flex h-8 w-fit items-center border border-fg bg-void px-3 text-[11px] font-bold uppercase tracking-wide text-fg hover:bg-fg hover:text-black"
+              >
+                {chain.cta}
+              </a>
             </div>
-          </fieldset>
-          <p className="text-[12px]">
-            <span className="text-[10px] uppercase tracking-wider text-muted">Preview </span>
-            <span className="text-cyan">{preview}</span>
-          </p>
-          <p className="text-[10px] uppercase tracking-wide text-muted">
-            Subdomain claim — not a marketplace listing
-          </p>
-          <div className="mt-auto">
-            <BlockKey tone="white" type="submit" active>
-              Claim
-            </BlockKey>
-          </div>
-        </form>
-      </Pane>
-      <Pane title="Queue" titleClass="text-up" meta="dummy">
-        {queued ? (
-          <div className="space-y-2 text-[12px]">
-            <p className="text-up">CLAIM QUEUED</p>
-            <p className="text-fg">{queued}</p>
-            <p className="text-muted">
-              Dummy UI only. Live name-service writes land with the registry, not this terminal fixture.
-            </p>
-          </div>
-        ) : (
-          <p className="text-muted">
-            Submit a name + chain to queue a claim. Agents stay ranked by Value $, not by listing fee.
-          </p>
-        )}
-      </Pane>
+          </Pane>
+        ))}
+      </div>
     </div>
   );
 }

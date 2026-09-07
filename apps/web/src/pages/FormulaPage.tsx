@@ -46,7 +46,7 @@ export default function FormulaPage() {
       <Pane title="Scope" titleClass="text-cyan" meta="not a marketplace">
         <ul className="space-y-1 text-[12px] text-fg">
           <li>Registry + ranking only. No listings, no custody, no wallet product.</li>
-          <li>Agents register via name-service subdomains (.akela.algo / .akela.sol / Basenames).</li>
+          <li>Agents mint segments on NFD / SNS / Basenames. This terminal does not register them.</li>
           <li>Price source TBD. Unpriced assets stay neutral — never guessed.</li>
           <li className="text-label">Dummy figures on this terminal are UI fixtures.</li>
         </ul>

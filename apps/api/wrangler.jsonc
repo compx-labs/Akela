@@ -7,5 +7,19 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "akela",
+      "database_id": "8cbfaf58-21d5-478d-9bfe-821f6a66bbf7",
+      "migrations_dir": "./migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "PRICES",
+      "id": "2cd8c2218cc84af7950760a1bcb81796"
+    }
+  ]
 }

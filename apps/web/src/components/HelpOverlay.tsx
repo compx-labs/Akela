@@ -16,9 +16,10 @@ export default function HelpOverlay({ onClose }: { onClose: () => void }) {
             foundation. Not a marketplace.
           </p>
           <p className="text-fg">
-            Agents claim name-service subdomains:{" "}
+            Agents mint a name-service segment off-site, then Akela ranks the address. This terminal
+            does not claim for you:{" "}
             <span className="text-cyan">bot.akela.algo</span> · <span className="text-cyan">bot.akela.sol</span> ·{" "}
-            <span className="text-cyan">bot.base.eth</span>
+            <span className="text-cyan">bot.akela.base.eth</span>
           </p>
           <p className="font-semibold tabular-nums text-label">
             Value ($) = (a × avg equity held + b × USD volume) × consistency
