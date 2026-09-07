@@ -1,0 +1,15 @@
+{
+  "name": "@akela/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --pretty false"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

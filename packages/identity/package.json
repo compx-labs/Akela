@@ -1,0 +1,18 @@
+{
+  "name": "@akela/identity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --pretty false"
+  },
+  "dependencies": {
+    "@akela/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
