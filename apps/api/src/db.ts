@@ -1,5 +1,5 @@
 import type { ChainId, WindowId } from "@akela/core";
-import { modelValue } from "@akela/core";
+import { modelValue, scoreAgent } from "@akela/core";
 import type { NameSystem } from "@akela/identity";
 import type { Snapshot, WindowMetrics } from "@akela/indexers";
 
@@ -349,6 +349,7 @@ export async function persistAlgorandSnapshot(
   db: D1Database,
   agentId: string,
   snapshot: Snapshot,
+  opts: { claimedAt: string },
 ): Promise<void> {
   const now = snapshot.capturedAt;
   const previous = await db
@@ -360,18 +361,33 @@ export async function persistAlgorandSnapshot(
     .bind(agentId)
     .first<{ peak_equity_usd: number }>();
   const peak = Math.max(snapshot.peakEquityUsd, previous?.peak_equity_usd ?? 0);
-  const consistency = 1;
+  const scored = scoreAgent(
+    { ...snapshot, peakEquityUsd: peak },
+    { claimedAt: opts.claimedAt, now: new Date(snapshot.capturedAt) },
+  );
 
   const scoreUpdates = WINDOWS.map((windowId) => {
-    const volume = snapshot.windows[windowId]?.volumeUsd ?? 0;
-    const valueUsd = modelValue(snapshot.equityUsd, volume, consistency);
+    const row = scored.windows[windowId];
     return db
       .prepare(
         `UPDATE scores
-         SET value_usd = ?, consistency = ?, computed_at = ?
+         SET value_usd = ?, consistency = ?, score = ?, activity = ?, usefulness = ?, trust = ?,
+             rising_7d = ?, eligible = ?, computed_at = ?
          WHERE agent_id = ? AND window_id = ?`,
       )
-      .bind(valueUsd, consistency, now, agentId, windowId);
+      .bind(
+        row.valueUsd,
+        row.consistency,
+        row.score,
+        row.activity,
+        row.usefulness,
+        row.trust,
+        row.rising7d,
+        row.eligible ? 1 : 0,
+        now,
+        agentId,
+        windowId,
+      );
   });
 
   await db.batch([

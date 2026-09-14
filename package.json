@@ -10,6 +10,7 @@
     "dev:api": "npm run dev -w @akela/api",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint -w @akela/web"
   },
   "engines": {

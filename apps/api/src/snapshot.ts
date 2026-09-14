@@ -31,7 +31,7 @@ export async function snapshotAlgorandAgents(env: CloudflareBindings): Promise<S
         registeredAt: claim.claimedAt,
         prices: (ids) => loadPriceBook(env.PRICES, ids, { apiBase: env.PRICE_API_BASE }),
       });
-      await persistAlgorandSnapshot(env.DB, claim.agentId, snapshot);
+      await persistAlgorandSnapshot(env.DB, claim.agentId, snapshot, { claimedAt: claim.claimedAt });
       run.snapshotted += 1;
     } catch (error) {
       run.failed.push({

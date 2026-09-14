@@ -1,6 +1,9 @@
 import {
+  CONSISTENCY_CURVE,
   CONSISTENCY_MAX,
   CONSISTENCY_MIN,
+  CONSISTENCY_MIX,
+  ELIGIBILITY,
   SCORE_FORMULA,
   SCORE_WEIGHTS,
   VALUE_A,
@@ -31,6 +34,11 @@ const SYSTEMS: NameSystem[] = ["nfd", "sns", "basename", "ens"];
 const BOARDS: BoardId[] = ["value", "score", "rising", "trusted", "active"];
 const WINDOWS: WindowId[] = ["24h", "7d", "30d", "since_registration"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function knobNumber(raw: string | undefined, fallback: number): number {
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -69,6 +77,8 @@ app.get("/formula", async (c) => {
       consistency: {
         min: Number(knobs.consistency_min ?? CONSISTENCY_MIN),
         max: Number(knobs.consistency_max ?? CONSISTENCY_MAX),
+        mix: CONSISTENCY_MIX,
+        formula: CONSISTENCY_CURVE,
       },
       exampleUsd: modelValue(10_000, 4_000, 1),
     },
@@ -81,8 +91,11 @@ app.get("/formula", async (c) => {
       },
     },
     floors: {
-      minActivity: knobs.min_activity_floor ?? "unset",
-      minEquityUsd: knobs.min_equity_floor_usd ?? "unset",
+      tooNewDays: knobNumber(knobs.too_new_days, ELIGIBILITY.tooNewDays),
+      minActiveDays7d: knobNumber(knobs.min_active_days_7d, ELIGIBILITY.minActiveDays7d),
+      minEquityUsd: knobNumber(knobs.min_equity_floor_usd, ELIGIBILITY.minEquityUsd),
+      minVolume7dUsd: knobNumber(knobs.min_volume_7d_usd, ELIGIBILITY.minVolume7dUsd),
+      staleAfterDays: knobNumber(knobs.stale_after_days, ELIGIBILITY.staleAfterDays),
     },
   });
 });
