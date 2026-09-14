@@ -5,6 +5,7 @@ import type { AgentSummary } from "../types";
 import ChainGlyphs from "./ChainGlyphs";
 import Sparkline from "./Sparkline";
 import StatusGlyph from "./StatusGlyph";
+import TickValue from "./TickValue";
 
 type SparkWindow = "7d" | "30d";
 
@@ -31,7 +32,9 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto text-[12px]">
       <header className="flex h-6 shrink-0 items-center gap-2 border-b border-hair px-2">
-        <h2 className="truncate font-semibold text-fg">{agent.name}</h2>
+        <h2 key={agent.id} className="anim-fade truncate font-semibold text-fg" title={agent.name}>
+          {agent.name}
+        </h2>
         <ChainGlyphs chains={agent.chains} />
         <span className="ml-auto">
           <StatusGlyph status={agent.status} />
@@ -39,20 +42,22 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
       </header>
 
       <div className="grid shrink-0 grid-cols-3 border-b border-hair">
-        <Hero label="Value $" value={formatUsd(agent.valueUsd)} accent />
-        <Hero label="Score" value={formatScore(agent.score)} />
+        <Hero label="Value $" raw={agent.valueUsd} value={formatUsd(agent.valueUsd)} accent />
+        <Hero label="Score" raw={agent.score} value={formatScore(agent.score)} />
         <Hero
           label="Cons"
+          raw={agent.consistency}
           value={formatMult(agent.consistency)}
           tone={agent.consistency >= 1 ? "up" : "down"}
         />
       </div>
 
       <div className="grid shrink-0 grid-cols-3 border-b border-hair">
-        <Hero label="Held / Trust $" value={formatUsd(agent.held)} compact />
-        <Hero label="Volume $" value={formatUsd(agent.volumeUsd)} compact />
+        <Hero label="Held / Trust $" raw={agent.held} value={formatUsd(agent.held)} compact />
+        <Hero label="Volume $" raw={agent.volumeUsd} value={formatUsd(agent.volumeUsd)} compact />
         <Hero
           label="Rising"
+          raw={agent.rising7d}
           value={formatDelta(agent.rising7d)}
           compact
           tone={agent.rising7d >= 0 ? "up" : "down"}
@@ -62,15 +67,17 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
       <div className="shrink-0 border-b border-hair">
         <div className="flex h-5 items-center gap-1 px-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-label">Series</span>
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex gap-1" role="tablist" aria-label="Series window">
             {(["7d", "30d"] as const).map((id) => (
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={windowId === id}
                 onClick={() => setWindowId(id)}
                 className={[
                   "h-4 min-w-[36px] border px-1.5 text-[10px] font-bold uppercase",
-                  windowId === id ? "border-fg bg-fg text-black" : "border-hair bg-void text-muted hover:text-fg",
+                  windowId === id ? "border-fg bg-fg text-black" : "border-hair bg-void text-muted hover:border-muted hover:text-fg",
                 ].join(" ")}
               >
                 {id}
@@ -87,7 +94,10 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
 
       <p className="border-b border-hair px-2 py-1.5 font-medium tabular-nums leading-5 text-fg">
         VALUE = ({VALUE_A}×{formatUsd(agent.held)} + {VALUE_B}×{formatUsd(agent.volumeUsd)}) ×{" "}
-        {formatMult(agent.consistency)} = {formatUsd(modeled)}
+        {formatMult(agent.consistency)} ={" "}
+        <TickValue value={modeled} className="font-semibold">
+          {formatUsd(modeled)}
+        </TickValue>
       </p>
       <p className="border-b border-hair px-2 py-0.5 text-[10px] uppercase tracking-wide text-label">
         model not an offer
@@ -108,9 +118,13 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
         <button
           type="button"
           onClick={copyName}
-          className="inline-flex h-6 min-w-[84px] items-center justify-center border border-fg bg-void px-2 text-[10px] font-bold uppercase text-fg hover:bg-fg hover:text-black"
+          aria-live="polite"
+          className={[
+            "inline-flex h-6 min-w-[84px] items-center justify-center border bg-void px-2 text-[10px] font-bold uppercase",
+            copied ? "border-up text-up" : "border-fg text-fg hover:bg-fg hover:text-black",
+          ].join(" ")}
         >
-          {copied ? "Copied" : "Copy name"}
+          {copied ? "Copied ✓" : "Copy name"}
         </button>
         <button
           type="button"
@@ -118,9 +132,18 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
             setNfd(true);
             window.setTimeout(() => setNfd(false), 1200);
           }}
-          className="inline-flex h-6 min-w-[84px] items-center justify-center border border-cyan bg-void px-2 text-[10px] font-bold uppercase text-cyan hover:bg-cyan hover:text-cyan-ink"
+          className="group inline-flex h-6 min-w-[84px] items-center justify-center gap-1 border border-cyan bg-void px-2 text-[10px] font-bold uppercase text-cyan hover:bg-cyan hover:text-cyan-ink"
         >
-          {nfd ? "Nfd stub" : "Open NFD"}
+          {nfd ? (
+            "Nfd stub"
+          ) : (
+            <>
+              Open NFD
+              <span aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5">
+                →
+              </span>
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -130,12 +153,14 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
 function Hero({
   label,
   value,
+  raw,
   accent = false,
   compact = false,
   tone,
 }: {
   label: string;
   value: string;
+  raw: number;
   accent?: boolean;
   compact?: boolean;
   tone?: "up" | "down";
@@ -147,7 +172,7 @@ function Hero({
         {label}
       </p>
       <p className={`${compact ? "text-[12px]" : "text-[16px]"} font-semibold tabular-nums leading-tight ${valueClass}`}>
-        {value}
+        <TickValue value={raw}>{value}</TickValue>
       </p>
     </div>
   );

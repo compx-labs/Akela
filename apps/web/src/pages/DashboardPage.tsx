@@ -18,7 +18,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="grid min-h-[108px] shrink-0 grid-cols-8 overflow-hidden">
-        {PANE_IDS.map((id) => {
+        {PANE_IDS.map((id, index) => {
           const metric = getMetric(id);
           return (
             <MetricPane
@@ -26,6 +26,7 @@ export default function DashboardPage() {
               metric={metric}
               windowId={windowId}
               hero={id === "value"}
+              index={index}
               className={id === "value" ? "-mb-px -mr-px col-span-2" : "-mb-px -mr-px"}
             />
           );
@@ -36,15 +37,19 @@ export default function DashboardPage() {
           <h2 className="text-[10px] font-semibold uppercase tracking-wider text-label">Ranked by Value $</h2>
           <span className="text-[10px] text-muted">{agents.length} agents</span>
           <span className="text-[10px] uppercase tracking-wide text-label">model not an offer</span>
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex gap-1" role="tablist" aria-label="Window">
             {WINDOWS.map((id) => (
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={windowId === id}
                 onClick={() => setWindowId(id)}
                 className={[
                   "h-5 min-w-[40px] border px-2 text-[10px] font-bold uppercase",
-                  windowId === id ? "border-fg bg-fg text-black" : "border-hair bg-void text-muted hover:text-fg",
+                  windowId === id
+                    ? "border-fg bg-fg text-black"
+                    : "border-hair bg-void text-muted hover:border-muted hover:text-fg",
                 ].join(" ")}
               >
                 {id}

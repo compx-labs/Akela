@@ -69,8 +69,8 @@ export function useAgentSelection(
 
 export function agentRowClass(selected: boolean, marked = false): string {
   return [
-    "h-[22px] cursor-pointer select-none border-b border-hair/80",
-    selected ? "bg-amber text-amber-ink" : "hover:bg-fg/[0.04]",
+    "h-[22px] cursor-pointer select-none border-b border-hair/80 transition-colors duration-75",
+    selected ? "bg-amber text-amber-ink" : "hover:bg-fg/[0.05]",
     marked ? "shadow-[inset_3px_0_0_0_#3ecfff]" : "",
   ].join(" ");
 }

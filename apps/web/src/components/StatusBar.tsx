@@ -9,22 +9,29 @@ export default function StatusBar({ pathname }: { pathname: string }) {
 
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-hair bg-void px-2 text-[10px] uppercase tracking-wide">
-      <span className="text-up">live</span>
+      <span className="inline-flex items-center gap-1.5 text-up">
+        <span className="live-dot" aria-hidden="true" />
+        live
+      </span>
       <span className="text-hair">|</span>
       <span className="text-muted">{n} agents</span>
       <span className="text-hair">|</span>
-      <span className="text-muted">{view.label}</span>
+      <span key={view.id} className="anim-fade text-muted">
+        {view.label}
+      </span>
       {markedIds.length > 0 ? (
-        <>
+        <span className="anim-fade inline-flex items-center gap-3">
           <span className="text-hair">|</span>
-          <span className="text-cyan">marks {markedIds.length}/8</span>
-        </>
+          <span className="text-cyan">
+            marks <span key={markedIds.length} className="anim-fade inline-block tabular-nums">{markedIds.length}</span>/8
+          </span>
+        </span>
       ) : null}
       {flash ? (
-        <>
+        <span key={flash} className="inline-flex items-center gap-3" role="status">
           <span className="text-hair">|</span>
-          <span className="text-down">{flash}</span>
-        </>
+          <span className="anim-flash font-semibold text-down">{flash}</span>
+        </span>
       ) : null}
       <span className="ml-auto text-label">akela value $ is a model, not an offer</span>
     </footer>

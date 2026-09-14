@@ -22,9 +22,14 @@ export default function CommandStrip() {
       <span className="hidden truncate text-muted lg:inline">{HINTS.join(" · ")}</span>
       <span className="ml-auto text-cyan">algorand · solana · base</span>
       <span className="text-hair">|</span>
-      <span className="text-label">{view.label}</span>
+      <span key={view.id} className="anim-fade inline-flex items-center gap-1 text-label">
+        {view.label}
+        <span className="caret" aria-hidden="true" />
+      </span>
       <span className="text-hair">|</span>
-      <span className="tabular-nums text-up">{clock}</span>
+      <time className="tabular-nums text-up" dateTime={clock}>
+        {clock}
+      </time>
     </header>
   );
 }

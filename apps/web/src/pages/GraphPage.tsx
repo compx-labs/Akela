@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import BarRank, { type BarRow } from "../components/BarRank";
 import OverlayLines, { type OverlaySeries } from "../components/OverlayLines";
 import { useMarks } from "../hooks/useMarks";
@@ -67,10 +67,10 @@ export default function GraphPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex h-6 shrink-0 items-center gap-2 border-b border-hair px-2">
-        <h1 className="text-[10px] font-semibold uppercase tracking-wider text-graph">
+        <h1 key={`h-${compare ? marked.length : "top"}`} className="anim-fade text-[10px] font-semibold uppercase tracking-wider text-graph">
           {compare ? `Compare · ${marked.length} agents` : "Top 10"}
         </h1>
-        <span className="text-[10px] uppercase tracking-wide text-muted">
+        <span key={`s-${compare ? "cmp" : "top"}`} className="anim-fade text-[10px] uppercase tracking-wide text-muted">
           {compare ? "marked set · 7d overlay" : "showing top 10 · full board on boards"}
         </span>
         {compare ? (
@@ -86,8 +86,8 @@ export default function GraphPage() {
         )}
       </header>
       <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 overflow-hidden [&>*]:-mb-px [&>*]:-mr-px">
-        {QUADS.map((quad) => (
-          <QuadPane key={quad.title} quad={quad} compare={compare} marked={marked} />
+        {QUADS.map((quad, index) => (
+          <QuadPane key={quad.title} quad={quad} compare={compare} marked={marked} index={index} />
         ))}
       </div>
     </div>
@@ -98,10 +98,12 @@ function QuadPane({
   quad,
   compare,
   marked,
+  index,
 }: {
   quad: Quad;
   compare: boolean;
   marked: AgentSummary[];
+  index: number;
 }) {
   const rows: BarRow[] = useMemo(() => {
     return topAgents(quad.metric).map((agent) => ({
@@ -123,12 +125,19 @@ function QuadPane({
   }, [marked, quad]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col border border-hair bg-panel">
+    <section
+      className="anim-rise flex min-h-0 min-w-0 flex-col border border-hair bg-panel"
+      style={{ "--i": index } as CSSProperties}
+    >
       <header className="flex h-5 shrink-0 items-center justify-between gap-2 border-b border-hair px-2">
         <h2 className="text-[10px] font-semibold uppercase tracking-wider text-label">{quad.title}</h2>
-        <span className="text-[10px] uppercase tracking-wide text-muted">{compare ? `${marked.length} series` : "Top 10"}</span>
+        <span key={compare ? marked.length : "top"} className="anim-fade text-[10px] uppercase tracking-wide text-muted">
+          {compare ? `${marked.length} series` : "Top 10"}
+        </span>
       </header>
-      <div className="min-h-0 flex-1 px-2 py-1">{compare ? <OverlayLines series={series} /> : <BarRank rows={rows} signed={quad.signed} />}</div>
+      <div key={compare ? "overlay" : "bars"} className="anim-fade min-h-0 flex-1 px-2 py-1">
+        {compare ? <OverlayLines series={series} /> : <BarRank rows={rows} signed={quad.signed} />}
+      </div>
     </section>
   );
 }

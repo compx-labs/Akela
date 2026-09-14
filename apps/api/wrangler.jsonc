@@ -11,7 +11,9 @@
   "vars": {
     "NFD_API_BASE": "https://api.nf.domains",
     "NFD_PARENT_NAME": "akela.algo",
-    "NFD_PARENT_APP_ID": "3698150696"
+    "NFD_PARENT_APP_ID": "3698150696",
+    "ALGO_INDEXER_BASE": "https://mainnet-idx.algonode.cloud",
+    "PRICE_API_BASE": "https://coins.llama.fi/prices/current"
   },
   "triggers": {
     "crons": ["0 * * * *"]

@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMarks } from "../hooks/useMarks";
-import { VIEWS } from "../lib/nav";
+import { VIEWS, viewByPath } from "../lib/nav";
 import CommandStrip from "./CommandStrip";
 import HelpOverlay from "./HelpOverlay";
 import StatusBar from "./StatusBar";
@@ -12,6 +12,10 @@ export default function TerminalShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [help, setHelp] = useState(false);
   const { clearMarks } = useMarks();
+
+  useEffect(() => {
+    document.title = `AKELA · ${viewByPath(pathname).label}`;
+  }, [pathname]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -42,8 +46,16 @@ export default function TerminalShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex h-screen min-w-[1280px] flex-col bg-void text-fg">
       <CommandStrip />
-      <ViewKeys />
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</main>
+      <div className="relative shrink-0">
+        <ViewKeys />
+        {/* Route sweep: a 1px amber line runs the width of the key row on every view change. */}
+        <div key={pathname} aria-hidden="true" className="anim-sweep pointer-events-none absolute inset-x-0 bottom-0 h-px bg-label" />
+      </div>
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div key={pathname} className="anim-view flex min-h-0 flex-1 flex-col">
+          {children}
+        </div>
+      </main>
       <StatusBar pathname={pathname} />
       {help ? <HelpOverlay onClose={() => setHelp(false)} /> : null}
     </div>

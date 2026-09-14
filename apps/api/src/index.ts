@@ -24,6 +24,7 @@ import {
 } from "./db";
 import { ingestAkelaSegments, readNfdRoot } from "./ingest";
 import { getPriceSource, putPriceSource } from "./prices";
+import { snapshotAlgorandAgents } from "./snapshot";
 
 const CHAINS: ChainId[] = ["algorand", "solana", "base"];
 const SYSTEMS: NameSystem[] = ["nfd", "sns", "basename", "ens"];
@@ -46,6 +47,9 @@ app.get("/health", async (c) => {
     nfd: {
       parent: c.env.NFD_PARENT_NAME,
       parentAppId: c.env.NFD_PARENT_APP_ID,
+    },
+    indexer: {
+      algorand: c.env.ALGO_INDEXER_BASE,
     },
   });
 });
@@ -93,6 +97,11 @@ app.get("/v1/nfd/root", async (c) => {
 
 app.post("/v1/ingest/nfd", async (c) => {
   const result = await ingestAkelaSegments(c.env);
+  return c.json(result);
+});
+
+app.post("/v1/ingest/algorand", async (c) => {
+  const result = await snapshotAlgorandAgents(c.env);
   return c.json(result);
 });
 
@@ -154,5 +163,6 @@ export default {
   fetch: app.fetch,
   async scheduled(_event, env) {
     await ingestAkelaSegments(env);
+    await snapshotAlgorandAgents(env);
   },
 } satisfies ExportedHandler<CloudflareBindings>;

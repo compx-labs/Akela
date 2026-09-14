@@ -78,19 +78,25 @@ export default function RegisterPage() {
           type="text"
           value={raw}
           onChange={(event) => setRaw(event.target.value)}
-          className="h-6 w-40"
+          className="h-6 w-40 caret-label"
           autoComplete="off"
           spellCheck={false}
+          aria-label="Agent name"
         />
         <span className="text-[10px] uppercase tracking-wide text-muted">
           Preview only — mint happens on the name service, not here
         </span>
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-3 [&>*]:-mb-px [&>*]:-mr-px">
-        {CHAINS.map((chain) => (
-          <Pane key={chain.id} title={chain.title} titleClass={chain.titleClass} meta={chain.meta}>
+        {CHAINS.map((chain, index) => (
+          <Pane key={chain.id} title={chain.title} titleClass={chain.titleClass} meta={chain.meta} index={index}>
             <div className="flex h-full flex-col gap-2 py-1">
-              <p className="font-semibold text-fg">{chain.name(slug)}</p>
+              <p className="font-semibold text-fg">
+                <span key={slug} className="anim-fade inline-block text-label">
+                  {slug}
+                </span>
+                {chain.name("")}
+              </p>
               <ol className="list-decimal space-y-1 pl-4 text-[12px] text-fg">
                 {chain.steps.map((step) => (
                   <li key={step}>{step}</li>
@@ -103,9 +109,12 @@ export default function RegisterPage() {
                 href={chain.href}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-auto inline-flex h-8 w-fit items-center border border-fg bg-void px-3 text-[11px] font-bold uppercase tracking-wide text-fg hover:bg-fg hover:text-black"
+                className="group mt-auto inline-flex h-8 w-fit items-center gap-1.5 border border-fg bg-void px-3 text-[11px] font-bold uppercase tracking-wide text-fg hover:bg-fg hover:text-black"
               >
                 {chain.cta}
+                <span aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5">
+                  ↗
+                </span>
               </a>
             </div>
           </Pane>

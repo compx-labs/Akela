@@ -9,10 +9,14 @@ export default function SplitInspect({ list, detail }: { list: ReactNode; detail
   );
 }
 
-export function InspectorEmpty() {
+export function InspectorEmpty({ hint = "↑ ↓ move  ·  click to select" }: { hint?: string }) {
   return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-[12px] text-muted">SELECT AN AGENT →</p>
+    <div className="anim-fade flex h-full flex-col items-center justify-center gap-2">
+      <p className="inline-flex items-center gap-2 text-[12px] text-muted">
+        <span className="caret text-label" aria-hidden="true" />
+        SELECT AN AGENT →
+      </p>
+      <p className="text-[10px] uppercase tracking-wide text-muted/60">{hint}</p>
     </div>
   );
 }

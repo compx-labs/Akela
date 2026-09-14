@@ -46,6 +46,7 @@ export default function BoardsPage() {
           <button
             key={item.id}
             type="button"
+            aria-pressed={board === item.id}
             onClick={() => setBoard(item.id)}
             className={[
               "inline-flex h-8 min-w-[84px] items-center justify-center border px-3 text-[11px] font-bold uppercase tracking-wide",
@@ -55,7 +56,9 @@ export default function BoardsPage() {
             {item.label}
           </button>
         ))}
-        <p className="ml-2 min-w-0 flex-1 truncate text-[10px] uppercase tracking-wide text-muted">{COPY[board]}</p>
+        <p key={board} className="anim-fade ml-2 min-w-0 flex-1 truncate text-[10px] uppercase tracking-wide text-muted">
+          {COPY[board]}
+        </p>
         <MarkKeys
           canMark={Boolean(selectedId)}
           markCount={markedIds.length}
@@ -79,7 +82,13 @@ export default function BoardsPage() {
               onSelect={onSelect}
             />
           }
-          detail={selected ? <AgentInspector agent={selected} /> : <InspectorEmpty />}
+          detail={
+            selected ? (
+              <AgentInspector agent={selected} />
+            ) : (
+              <InspectorEmpty hint="↑ ↓ move  ·  space / ⇧click mark  ·  esc clear" />
+            )
+          }
         />
       </div>
     </div>

@@ -3,7 +3,7 @@ import Pane from "../components/Pane";
 export default function FormulaPage() {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 overflow-hidden [&>*]:-mb-px [&>*]:-mr-px">
-      <Pane title="Value $" titleClass="text-label" meta="hero metric">
+      <Pane title="Value $" titleClass="text-label" meta="hero metric" index={0}>
         <p className="font-semibold tabular-nums text-fg">
           Value = (a × avg_equity_held + b × usd_volume) × consistency
         </p>
@@ -19,7 +19,7 @@ export default function FormulaPage() {
         </dl>
         <p className="mt-3 text-[10px] uppercase tracking-wide text-label">This is a model, not an offer.</p>
       </Pane>
-      <Pane title="Akela Score" titleClass="text-fg" meta="0–100">
+      <Pane title="Akela Score" titleClass="text-fg" meta="0–100" index={1}>
         <p className="font-semibold text-fg">Score = 0.35 Activity + 0.40 Usefulness + 0.25 Trust</p>
         <ul className="mt-2 space-y-1 text-[12px] text-fg">
           <li>
@@ -33,7 +33,7 @@ export default function FormulaPage() {
           </li>
         </ul>
       </Pane>
-      <Pane title="Consistency multiplier" titleClass="text-label" meta="0.50–1.20">
+      <Pane title="Consistency multiplier" titleClass="text-label" meta="0.50–1.20" index={2}>
         <p className="text-fg">
           First-class multiplier from on-chain proxies: active days, gap penalty, cadence.
         </p>
@@ -43,7 +43,7 @@ export default function FormulaPage() {
           <li className="text-down">&lt; 1.00 gapped / bursty</li>
         </ul>
       </Pane>
-      <Pane title="Scope" titleClass="text-cyan" meta="not a marketplace">
+      <Pane title="Scope" titleClass="text-cyan" meta="not a marketplace" index={3}>
         <ul className="space-y-1 text-[12px] text-fg">
           <li>Registry + ranking only. No listings, no custody, no wallet product.</li>
           <li>Agents mint segments on NFD / SNS / Basenames. This terminal does not register them.</li>

@@ -325,3 +325,79 @@ export async function upsertNfdSegment(
   });
   return { id, created: true };
 }
+
+export type AlgorandClaim = {
+  agentId: string;
+  name: string;
+  address: string;
+  claimedAt: string;
+};
+
+export async function listAlgorandClaims(db: D1Database): Promise<AlgorandClaim[]> {
+  const { results } = await db
+    .prepare("SELECT agent_id, name, address, claimed_at FROM claims WHERE chain = 'algorand'")
+    .all<{ agent_id: string; name: string; address: string; claimed_at: string }>();
+  return (results ?? []).map((row) => ({
+    agentId: row.agent_id,
+    name: row.name,
+    address: row.address,
+    claimedAt: row.claimed_at,
+  }));
+}
+
+export async function persistAlgorandSnapshot(
+  db: D1Database,
+  agentId: string,
+  snapshot: Snapshot,
+): Promise<void> {
+  const now = snapshot.capturedAt;
+  const previous = await db
+    .prepare(
+      `SELECT peak_equity_usd FROM snapshots
+       WHERE agent_id = ? AND chain = 'algorand'
+       ORDER BY captured_at DESC LIMIT 1`,
+    )
+    .bind(agentId)
+    .first<{ peak_equity_usd: number }>();
+  const peak = Math.max(snapshot.peakEquityUsd, previous?.peak_equity_usd ?? 0);
+  const consistency = 1;
+
+  const scoreUpdates = WINDOWS.map((windowId) => {
+    const volume = snapshot.windows[windowId]?.volumeUsd ?? 0;
+    const valueUsd = modelValue(snapshot.equityUsd, volume, consistency);
+    return db
+      .prepare(
+        `UPDATE scores
+         SET value_usd = ?, consistency = ?, computed_at = ?
+         WHERE agent_id = ? AND window_id = ?`,
+      )
+      .bind(valueUsd, consistency, now, agentId, windowId);
+  });
+
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO snapshots (
+          id, agent_id, chain, captured_at, equity_usd, peak_equity_usd,
+          last_seen_at, longest_quiet_gap_days, counterparties,
+          windows_json, active_days_json, tx_timestamps_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        agentId,
+        snapshot.chain,
+        now,
+        snapshot.equityUsd,
+        peak,
+        snapshot.lastSeenAt,
+        snapshot.longestQuietGapDays,
+        snapshot.counterparties,
+        JSON.stringify(snapshot.windows),
+        JSON.stringify(snapshot.activeDays),
+        JSON.stringify(snapshot.txTimestamps),
+      ),
+    db.prepare("UPDATE agents SET updated_at = ? WHERE id = ?").bind(now, agentId),
+    ...scoreUpdates,
+  ]);
+}

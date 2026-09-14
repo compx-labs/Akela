@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CHART_CAP } from "../lib/mockSeries";
 import { shortAgent } from "../lib/format";
 
@@ -23,12 +24,20 @@ export default function BarRank({ rows, signed = false }: { rows: BarRow[]; sign
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-between gap-[3px] py-0.5">
-      {capped.map((row) => {
+      {capped.map((row, index) => {
         const pct = Math.max(2, (Math.abs(row.value) / peak) * 100);
         const fill = TONE[row.tone ?? "amber"];
+        const positive = row.value >= 0;
         return (
-          <div key={row.id} className="flex h-[18px] min-h-0 items-center gap-1.5">
-            <span className="w-[78px] shrink-0 truncate text-[11px] text-muted" title={row.name}>
+          <div
+            key={row.id}
+            className="group -mx-1 flex h-[18px] min-h-0 items-center gap-1.5 px-1 transition-colors duration-75 hover:bg-fg/[0.05]"
+            style={{ "--i": index } as CSSProperties}
+          >
+            <span
+              className="w-[78px] shrink-0 truncate text-[11px] text-muted transition-colors group-hover:text-fg"
+              title={row.name}
+            >
               {shortAgent(row.name)}
             </span>
             <div className="relative h-2.5 min-w-0 flex-1 bg-void">
@@ -36,16 +45,12 @@ export default function BarRank({ rows, signed = false }: { rows: BarRow[]; sign
                 <>
                   <div className="absolute inset-y-0 left-1/2 w-px bg-hair" />
                   <div
-                    className={`absolute top-0 h-full ${fill}`}
-                    style={
-                      row.value >= 0
-                        ? { left: "50%", width: `${pct / 2}%` }
-                        : { right: "50%", width: `${pct / 2}%` }
-                    }
+                    className={`bar-grow absolute top-0 h-full ${fill} ${positive ? "bar-grow-left" : "bar-grow-right"}`}
+                    style={positive ? { left: "50%", width: `${pct / 2}%` } : { right: "50%", width: `${pct / 2}%` }}
                   />
                 </>
               ) : (
-                <div className={`h-full ${fill}`} style={{ width: `${pct}%` }} />
+                <div className={`bar-grow bar-grow-left h-full ${fill}`} style={{ width: `${pct}%` }} />
               )}
             </div>
             <span

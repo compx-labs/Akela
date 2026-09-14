@@ -1,4 +1,5 @@
 import type { ChainId, WindowId } from "@akela/core";
+import type { SnapshotOpts } from "./algorand";
 
 export type { ChainId, WindowId };
 
@@ -31,5 +32,16 @@ export type Snapshot = {
 
 export type ChainIndexer = {
   readonly chain: ChainId;
-  snapshot(address: string): Promise<Snapshot>;
+  snapshot(address: string, opts?: SnapshotOpts): Promise<Snapshot>;
 };
+
+export {
+  ALGO_DECIMALS,
+  ALGO_PRICE_ID,
+  AlgorandIndexer,
+  NODELY_INDEXER_BASE,
+  asaPriceId,
+  isAlgorandAddress,
+  snapshotAlgorand,
+} from "./algorand";
+export type { AssetPrice, FetchFn, PriceLookup, SnapshotOpts } from "./algorand";
