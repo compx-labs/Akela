@@ -1,20 +1,25 @@
+import { useBoard } from "../hooks/useAkela";
 import { useMarks } from "../hooks/useMarks";
-import { listAgents } from "../lib/mockSeries";
 import { viewByPath } from "../lib/nav";
 
 export default function StatusBar({ pathname }: { pathname: string }) {
   const view = viewByPath(pathname);
-  const n = listAgents().length;
+  const query = useBoard("value", "7d");
+  const n = query.data?.length ?? 0;
   const { markedIds, flash } = useMarks();
 
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-hair bg-void px-2 text-[10px] uppercase tracking-wide">
-      <span className="inline-flex items-center gap-1.5 text-up">
-        <span className="live-dot" aria-hidden="true" />
-        live
-      </span>
+      {query.isError ? (
+        <span className="text-down">api down</span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 text-up">
+          <span className="live-dot" aria-hidden="true" />
+          live
+        </span>
+      )}
       <span className="text-hair">|</span>
-      <span className="text-muted">{n} agents</span>
+      <span className="text-muted">{query.isLoading ? "loading" : `${n} agents`}</span>
       <span className="text-hair">|</span>
       <span key={view.id} className="anim-fade text-muted">
         {view.label}

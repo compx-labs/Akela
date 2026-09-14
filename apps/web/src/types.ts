@@ -45,4 +45,7 @@ export type AgentSummary = {
   rising7d: number;
   consistency: number;
   status: AgentStatus;
+  lastSeenAt: string | null;
+  eligible: boolean;
+  address: string;
 };

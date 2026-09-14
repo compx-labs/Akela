@@ -1,20 +1,24 @@
-import { useMemo, useState, type CSSProperties, type MouseEvent } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentInspector from "../components/AgentInspector";
 import ChainGlyphs from "../components/ChainGlyphs";
 import MarkKeys from "../components/MarkKeys";
 import SplitInspect, { InspectorEmpty } from "../components/SplitInspect";
 import StatusGlyph from "../components/StatusGlyph";
+import { useBoard } from "../hooks/useAkela";
 import { useMarks } from "../hooks/useMarks";
 import { agentRowClass, useAgentSelection } from "../hooks/useAgentSelection";
 import { formatScore, formatUsd } from "../lib/format";
-import { listAgents } from "../lib/mockSeries";
+import type { AgentSummary } from "../types";
 
 export default function AgentsPage() {
+  const { name } = useParams();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const board = useBoard("value", "7d");
   const agents = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = listAgents();
+    const list = board.data ?? [];
     if (!q) {
       return list;
     }
@@ -24,9 +28,23 @@ export default function AgentsPage() {
         agent.chains.some((chain) => chain.includes(q)) ||
         agent.status.includes(q),
     );
-  }, [query]);
+  }, [board.data, query]);
   const { markedIds, toggleMark, clearMarks } = useMarks();
-  const { selected, selectedId, select } = useAgentSelection(agents, { onSpace: toggleMark });
+  const onNavigate = useCallback(
+    (agent: AgentSummary) => {
+      const current = name ? decodeURIComponent(name) : "";
+      if (current === agent.name) {
+        return;
+      }
+      navigate(`/agents/${encodeURIComponent(agent.name)}`, { replace: true });
+    },
+    [name, navigate],
+  );
+  const { selected, selectedId, select } = useAgentSelection(agents, {
+    onSpace: toggleMark,
+    selectedKey: name,
+    onNavigate,
+  });
 
   const onSelect = (id: string, event: MouseEvent<HTMLTableRowElement>) => {
     if (event.shiftKey) {
@@ -34,6 +52,14 @@ export default function AgentsPage() {
     }
     select(id);
   };
+
+  const empty = board.isLoading
+    ? "loading ranks…"
+    : board.isError
+      ? "api unreachable — start the local worker"
+      : query.trim()
+        ? `no match for “${query.trim()}”`
+        : "no live agents yet — mint a *.akela.algo segment";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -125,8 +151,8 @@ export default function AgentsPage() {
                   })}
                   {agents.length === 0 ? (
                     <tr className="anim-fade">
-                      <td colSpan={6} className="px-2 py-6 text-center text-[11px] uppercase tracking-wide text-down">
-                        No match for “{query.trim()}”
+                      <td colSpan={6} className="px-2 py-6 text-center text-[11px] uppercase tracking-wide text-muted">
+                        {empty}
                       </td>
                     </tr>
                   ) : null}

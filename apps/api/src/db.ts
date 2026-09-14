@@ -1,7 +1,7 @@
 import type { ChainId, WindowId } from "@akela/core";
 import { modelValue, scoreAgent } from "@akela/core";
 import type { NameSystem } from "@akela/identity";
-import type { Snapshot, WindowMetrics } from "@akela/indexers";
+import { isAlgorandAddress, type Snapshot, type WindowMetrics } from "@akela/indexers";
 
 const WINDOWS: WindowId[] = ["24h", "7d", "30d", "since_registration"];
 
@@ -232,6 +232,10 @@ export type AgentListRow = {
   usefulness: number;
   trust: number;
   rising7d: number;
+  consistency: number;
+  heldUsd: number;
+  volumeUsd: number;
+  lastSeenAt: string | null;
   eligible: boolean;
 };
 
@@ -260,10 +264,17 @@ export async function listAgents(
               COALESCE(s.usefulness, 0) AS usefulness,
               COALESCE(s.trust, 0) AS trust,
               COALESCE(s.rising_7d, 0) AS rising_7d,
-              COALESCE(s.eligible, 0) AS eligible
+              COALESCE(s.consistency, 1) AS consistency,
+              COALESCE(s.eligible, 0) AS eligible,
+              snap.equity_usd AS equity_usd,
+              snap.windows_json AS windows_json,
+              snap.last_seen_at AS last_seen_at
        FROM claims c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN scores s ON s.agent_id = a.id AND s.window_id = ?
+       LEFT JOIN snapshots snap ON snap.id = (
+         SELECT id FROM snapshots WHERE agent_id = a.id ORDER BY captured_at DESC LIMIT 1
+       )
        WHERE c.chain = ?
        ORDER BY ${order}`,
     )
@@ -278,21 +289,43 @@ export async function listAgents(
       usefulness: number;
       trust: number;
       rising_7d: number;
+      consistency: number;
       eligible: number;
+      equity_usd: number | null;
+      windows_json: string | null;
+      last_seen_at: string | null;
     }>();
 
-  return (results ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-    address: row.address,
-    valueUsd: row.value_usd,
-    score: row.score,
-    activity: row.activity,
-    usefulness: row.usefulness,
-    trust: row.trust,
-    rising7d: row.rising_7d,
-    eligible: row.eligible === 1,
-  }));
+  return (results ?? [])
+    .filter((row) => isAlgorandAddress(row.address))
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      address: row.address,
+      valueUsd: row.value_usd,
+      score: row.score,
+      activity: row.activity,
+      usefulness: row.usefulness,
+      trust: row.trust,
+      rising7d: row.rising_7d,
+      consistency: row.consistency,
+      heldUsd: row.equity_usd ?? 0,
+      volumeUsd: volumeFromWindows(row.windows_json, windowId),
+      lastSeenAt: row.last_seen_at,
+      eligible: row.eligible === 1,
+    }));
+}
+
+function volumeFromWindows(raw: string | null, windowId: WindowId): number {
+  if (!raw) {
+    return 0;
+  }
+  try {
+    const windows = JSON.parse(raw) as Record<string, { volumeUsd?: number }>;
+    return Number(windows[windowId]?.volumeUsd ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 export async function upsertNfdSegment(

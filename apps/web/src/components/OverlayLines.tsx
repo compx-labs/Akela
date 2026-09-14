@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { CHART_CAP } from "../lib/mockSeries";
+import { CHART_CAP } from "../lib/chart";
 import { shortAgent } from "../lib/format";
 
 export type OverlaySeries = {

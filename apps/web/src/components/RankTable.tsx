@@ -1,5 +1,6 @@
 import type { CSSProperties, MouseEvent } from "react";
 import type { AgentSummary, BoardId } from "../types";
+import { risingPct } from "../lib/api";
 import { formatMult, formatScore, formatUsd } from "../lib/format";
 import { agentRowClass } from "../hooks/useAgentSelection";
 import ChainGlyphs from "./ChainGlyphs";
@@ -106,12 +107,14 @@ export default function RankTable({
                   {formatScore(agent.score)}
                 </td>
                 <td className="px-2 text-right tabular-nums">
-                  <Delta value={agent.rising7d} inherit={selected} />
+                  <Delta value={risingPct(agent.rising7d)} inherit={selected} />
                 </td>
                 <td className={`px-2 text-right tabular-nums ${selected ? "" : "text-fg"}`}>
-                  {formatUsd(agent.trust)}
+                  {formatUsd(agent.held)}
                 </td>
-                <td className={`px-2 text-right tabular-nums ${selected ? "" : "text-fg"}`}>{agent.activity}</td>
+                <td className={`px-2 text-right tabular-nums ${selected ? "" : "text-fg"}`}>
+                  {formatScore(agent.activity)}
+                </td>
                 <td
                   className={`px-2 text-right tabular-nums ${selected ? "" : agent.consistency >= 1 ? "text-up" : "text-muted"}`}
                 >

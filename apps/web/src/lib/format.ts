@@ -29,6 +29,10 @@ export function formatDelta(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
+export function formatRising(ratio: number): string {
+  return formatDelta((ratio - 1) * 100);
+}
+
 export function formatMult(value: number): string {
   return `${value.toFixed(2)}×`;
 }

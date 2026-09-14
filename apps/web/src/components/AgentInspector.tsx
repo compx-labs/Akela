@@ -1,6 +1,9 @@
+import { VALUE_A, VALUE_B, modelValue } from "@akela/core";
 import { useMemo, useState } from "react";
-import { agentLastSeen, agentSparkValues, modelValue, SPARK, VALUE_A, VALUE_B } from "../lib/mockSeries";
-import { formatDelta, formatMult, formatScore, formatUsd } from "../lib/format";
+import { useAgentDetail } from "../hooks/useAkela";
+import { lastSeenLabel, sparkFromSnapshots } from "../lib/api";
+import { SPARK } from "../lib/chart";
+import { formatMult, formatRising, formatScore, formatUsd } from "../lib/format";
 import type { AgentSummary } from "../types";
 import ChainGlyphs from "./ChainGlyphs";
 import Sparkline from "./Sparkline";
@@ -9,15 +12,31 @@ import TickValue from "./TickValue";
 
 type SparkWindow = "7d" | "30d";
 
+const NFD_APP = "https://app.nf.domains/name";
+
 export default function AgentInspector({ agent }: { agent: AgentSummary }) {
   const [windowId, setWindowId] = useState<SparkWindow>("7d");
   const [copied, setCopied] = useState(false);
-  const [nfd, setNfd] = useState(false);
+  const detail = useAgentDetail(agent.id);
+  const nfd = agent.name.endsWith(".algo");
 
-  const valueSpark = useMemo(() => agentSparkValues(agent, "value", windowId), [agent, windowId]);
-  const volumeSpark = useMemo(() => agentSparkValues(agent, "volume", windowId), [agent, windowId]);
-  const scoreSpark = useMemo(() => agentSparkValues(agent, "score", windowId), [agent, windowId]);
+  const valueSpark = useMemo(
+    () => sparkFromSnapshots(detail.data, "value", windowId, agent.valueUsd),
+    [agent.valueUsd, detail.data, windowId],
+  );
+  const volumeSpark = useMemo(
+    () => sparkFromSnapshots(detail.data, "volume", windowId, agent.volumeUsd),
+    [agent.volumeUsd, detail.data, windowId],
+  );
+  const scoreSpark = useMemo(
+    () => sparkFromSnapshots(detail.data, "score", windowId, agent.score),
+    [agent.score, detail.data, windowId],
+  );
   const modeled = modelValue(agent.held, agent.volumeUsd, agent.consistency);
+  const latest = detail.data?.snapshots
+    .slice()
+    .sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt))[0];
+  const activeDays = latest?.windows[windowId]?.activeDays;
 
   const copyName = async () => {
     try {
@@ -41,26 +60,47 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
         </span>
       </header>
 
-      <div className="grid shrink-0 grid-cols-3 border-b border-hair">
+      <div className="relative z-20 grid shrink-0 grid-cols-3 border-b border-hair">
         <Hero label="Value $" raw={agent.valueUsd} value={formatUsd(agent.valueUsd)} accent />
-        <Hero label="Score" raw={agent.score} value={formatScore(agent.score)} />
+        <Hero
+          label="Score"
+          raw={agent.score}
+          value={formatScore(agent.score)}
+          hint="Composite 0–100 rank: 35% activity + 40% usefulness + 25% trust."
+        />
         <Hero
           label="Cons"
           raw={agent.consistency}
           value={formatMult(agent.consistency)}
           tone={agent.consistency >= 1 ? "up" : "down"}
+          hintAlign="end"
+          hint="Consistency multiplier, clipped to 0.50–1.20. ≥ 1.00 is a tight cadence; below 1.00 is gappy / bursty."
         />
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 border-b border-hair">
-        <Hero label="Held / Trust $" raw={agent.held} value={formatUsd(agent.held)} compact />
-        <Hero label="Volume $" raw={agent.volumeUsd} value={formatUsd(agent.volumeUsd)} compact />
+      <div className="relative z-10 grid shrink-0 grid-cols-3 border-b border-hair">
+        <Hero
+          label="Held / Trust $"
+          raw={agent.held}
+          value={formatUsd(agent.held)}
+          compact
+          hint="Current equity held (wallet value). Also the trust pillar's main input."
+        />
+        <Hero
+          label="Volume $"
+          raw={agent.volumeUsd}
+          value={formatUsd(agent.volumeUsd)}
+          compact
+          hint="USD volume in the selected scoring window."
+        />
         <Hero
           label="Rising"
           raw={agent.rising7d}
-          value={formatDelta(agent.rising7d)}
+          value={formatRising(agent.rising7d)}
           compact
-          tone={agent.rising7d >= 0 ? "up" : "down"}
+          tone={agent.rising7d >= 1 ? "up" : "down"}
+          hintAlign="end"
+          hint="7-day volume pace vs 30-day pace: (vol7/7) ÷ (vol30/30), shown as % vs 1.0. Negative means recent daily volume has cooled."
         />
       </div>
 
@@ -99,19 +139,20 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
           {formatUsd(modeled)}
         </TickValue>
       </p>
-      <p className="border-b border-hair px-2 py-0.5 text-[10px] uppercase tracking-wide text-label">
-        model not an offer
-      </p>
 
-      <dl className="grid shrink-0 grid-cols-[72px_1fr] gap-x-2 gap-y-0.5 border-b border-hair px-2 py-1.5 text-[11px]">
+      <dl className="grid shrink-0 grid-cols-[84px_1fr] gap-x-2 gap-y-0.5 border-b border-hair px-2 py-1.5 text-[11px]">
         <dt className="text-muted">Claim</dt>
         <dd className="text-cyan">REGISTERED</dd>
         <dt className="text-muted">NFD</dt>
-        <dd className="text-fg">{agent.name.endsWith(".algo") ? "queued stub" : "n/a"}</dd>
+        <dd className="text-fg">{nfd ? "live" : "n/a"}</dd>
         <dt className="text-muted">Last seen</dt>
-        <dd className="text-fg">{agentLastSeen(agent)}</dd>
-        <dt className="text-muted">Active</dt>
-        <dd className="text-fg">{agent.activity} days</dd>
+        <dd className="text-fg">{lastSeenLabel(agent.lastSeenAt)}</dd>
+        <dt className="text-muted">Activity</dt>
+        <dd className="text-fg">{formatScore(agent.activity)}</dd>
+        <dt className="text-muted">Active days</dt>
+        <dd className="text-fg">{activeDays ?? "—"}</dd>
+        <dt className="text-muted">Eligible</dt>
+        <dd className={agent.eligible ? "text-up" : "text-down"}>{agent.eligible ? "yes" : "no"}</dd>
       </dl>
 
       <div className="flex gap-1 px-2 py-2">
@@ -126,25 +167,19 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
         >
           {copied ? "Copied ✓" : "Copy name"}
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setNfd(true);
-            window.setTimeout(() => setNfd(false), 1200);
-          }}
-          className="group inline-flex h-6 min-w-[84px] items-center justify-center gap-1 border border-cyan bg-void px-2 text-[10px] font-bold uppercase text-cyan hover:bg-cyan hover:text-cyan-ink"
-        >
-          {nfd ? (
-            "Nfd stub"
-          ) : (
-            <>
-              Open NFD
-              <span aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5">
-                →
-              </span>
-            </>
-          )}
-        </button>
+        {nfd ? (
+          <a
+            href={`${NFD_APP}/${encodeURIComponent(agent.name)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="group inline-flex h-6 min-w-[84px] items-center justify-center gap-1 border border-cyan bg-void px-2 text-[10px] font-bold uppercase text-cyan hover:bg-cyan hover:text-cyan-ink"
+          >
+            Open NFD
+            <span aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5">
+              →
+            </span>
+          </a>
+        ) : null}
       </div>
     </div>
   );
@@ -157,6 +192,8 @@ function Hero({
   accent = false,
   compact = false,
   tone,
+  hint,
+  hintAlign = "start",
 }: {
   label: string;
   value: string;
@@ -164,17 +201,45 @@ function Hero({
   accent?: boolean;
   compact?: boolean;
   tone?: "up" | "down";
+  hint?: string;
+  hintAlign?: "start" | "end";
 }) {
   const valueClass = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-fg";
   return (
     <div className="border-r border-hair px-2 py-1 last:border-r-0">
-      <p className={`text-[10px] font-semibold uppercase tracking-wider ${accent ? "text-label" : "text-muted"}`}>
-        {label}
+      <p
+        className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${accent ? "text-label" : "text-muted"}`}
+      >
+        <span className="truncate">{label}</span>
+        {hint ? <HintMark text={hint} align={hintAlign} /> : null}
       </p>
       <p className={`${compact ? "text-[12px]" : "text-[16px]"} font-semibold tabular-nums leading-tight ${valueClass}`}>
         <TickValue value={raw}>{value}</TickValue>
       </p>
     </div>
+  );
+}
+
+function HintMark({ text, align }: { text: string; align: "start" | "end" }) {
+  return (
+    <span className="group relative inline-flex shrink-0">
+      <button
+        type="button"
+        aria-label="About this metric"
+        className="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center border border-hair text-[8px] font-bold leading-none text-muted hover:border-muted hover:text-fg"
+      >
+        ?
+      </button>
+      <span
+        role="tooltip"
+        className={[
+          "pointer-events-none invisible absolute top-full z-30 mt-1 w-max max-w-[220px] border border-hair bg-panel px-1.5 py-1 text-left text-[10px] font-medium normal-case leading-snug tracking-normal text-fg group-hover:visible group-focus-within:visible",
+          align === "end" ? "right-0" : "left-0",
+        ].join(" ")}
+      >
+        {text}
+      </span>
+    </span>
   );
 }
 

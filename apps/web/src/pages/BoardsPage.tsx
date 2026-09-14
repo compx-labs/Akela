@@ -1,11 +1,12 @@
-import { useMemo, useState, type MouseEvent } from "react";
+import { useMemo, type MouseEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import AgentInspector from "../components/AgentInspector";
 import MarkKeys from "../components/MarkKeys";
 import RankTable from "../components/RankTable";
 import SplitInspect, { InspectorEmpty } from "../components/SplitInspect";
+import { useBoard } from "../hooks/useAkela";
 import { useMarks } from "../hooks/useMarks";
 import { useAgentSelection } from "../hooks/useAgentSelection";
-import { rankedAgents } from "../lib/mockSeries";
 import type { BoardId } from "../types";
 import type { ViewTone } from "../lib/nav";
 import { toneClass } from "../lib/keyTone";
@@ -19,16 +20,23 @@ const BOARDS: Array<{ id: BoardId; label: string; tone: ViewTone }> = [
 ];
 
 const COPY: Record<BoardId, string> = {
-  value: "Akela Value $  ·  model not an offer",
+  value: "Akela Value $",
   score: "Akela Score  ·  0.35 act + 0.40 use + 0.25 trust",
-  rising: "7d Value delta  ·  green up / red down",
+  rising: "7d volume pace vs 30d daily avg",
   trusted: "Trust (held)  ·  average equity held",
   active: "Activity  ·  on-chain cadence / active days",
 };
 
+function asBoard(raw: string | undefined): BoardId {
+  return BOARDS.some((item) => item.id === raw) ? (raw as BoardId) : "value";
+}
+
 export default function BoardsPage() {
-  const [board, setBoard] = useState<BoardId>("value");
-  const agents = useMemo(() => rankedAgents(board), [board]);
+  const { boardId } = useParams();
+  const navigate = useNavigate();
+  const board = asBoard(boardId);
+  const query = useBoard(board, "7d");
+  const agents = query.data ?? [];
   const { markedIds, toggleMark, clearMarks } = useMarks();
   const { selected, selectedId, select } = useAgentSelection(agents, { onSpace: toggleMark });
 
@@ -39,6 +47,16 @@ export default function BoardsPage() {
     select(id);
   };
 
+  const empty = useMemo(() => {
+    if (query.isLoading) {
+      return "loading ranks…";
+    }
+    if (query.isError) {
+      return "api unreachable — start the local worker";
+    }
+    return "no live agents yet — mint a *.akela.algo segment";
+  }, [query.isError, query.isLoading]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-hair px-1 py-1">
@@ -47,7 +65,7 @@ export default function BoardsPage() {
             key={item.id}
             type="button"
             aria-pressed={board === item.id}
-            onClick={() => setBoard(item.id)}
+            onClick={() => navigate(`/boards/${item.id}`)}
             className={[
               "inline-flex h-8 min-w-[84px] items-center justify-center border px-3 text-[11px] font-bold uppercase tracking-wide",
               toneClass(item.tone, board === item.id),
@@ -73,14 +91,20 @@ export default function BoardsPage() {
       <div className="flex min-h-0 flex-1 border-x border-hair">
         <SplitInspect
           list={
-            <RankTable
-              agents={agents}
-              highlight={board}
-              showStatus
-              selectedId={selectedId}
-              markedIds={markedIds}
-              onSelect={onSelect}
-            />
+            agents.length ? (
+              <RankTable
+                agents={agents}
+                highlight={board}
+                showStatus
+                selectedId={selectedId}
+                markedIds={markedIds}
+                onSelect={onSelect}
+              />
+            ) : (
+              <p className="flex flex-1 items-center justify-center px-4 text-center text-[11px] uppercase tracking-wide text-muted">
+                {empty}
+              </p>
+            )
           }
           detail={
             selected ? (

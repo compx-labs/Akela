@@ -16,7 +16,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/boards" element={<BoardsPage />} />
+          <Route path="/boards/:boardId" element={<BoardsPage />} />
           <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/agents/:name" element={<AgentsPage />} />
           <Route path="/graph" element={<GraphPage />} />
           <Route path="/formula" element={<FormulaPage />} />
           <Route path="/register" element={<RegisterPage />} />

@@ -5,10 +5,16 @@ const F_KEYS = new Set(["F1", "F2", "F3", "F4", "F5", "F6", "F7"]);
 
 export function useAgentSelection(
   agents: AgentSummary[],
-  options?: { onSpace?: (id: string) => void },
+  options?: {
+    onSpace?: (id: string) => void;
+    selectedKey?: string | null;
+    onNavigate?: (agent: AgentSummary) => void;
+  },
 ) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const onSpace = options?.onSpace;
+  const selectedKey = options?.selectedKey;
+  const onNavigate = options?.onNavigate;
 
   const selected = useMemo(
     () => agents.find((agent) => agent.id === selectedId) ?? null,
@@ -55,6 +61,23 @@ export function useAgentSelection(
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [agents, selectedId, onSpace]);
+
+  useEffect(() => {
+    if (!selectedKey || agents.length === 0) {
+      return;
+    }
+    const decoded = decodeURIComponent(selectedKey);
+    const match = agents.find((agent) => agent.id === decoded || agent.name === decoded);
+    if (match) {
+      setSelectedId(match.id);
+    }
+  }, [selectedKey, agents]);
+
+  useEffect(() => {
+    if (selected) {
+      onNavigate?.(selected);
+    }
+  }, [selected, onNavigate]);
 
   useEffect(() => {
     if (!selectedId) {

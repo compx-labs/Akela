@@ -32,18 +32,16 @@ export default function HelpOverlay({ onClose }: { onClose: () => void }) {
         </header>
         <div className="space-y-3 px-3 py-3 text-[12px] leading-5">
           <p className="text-fg">
-            Akela is an Algorand / Solana / Base <span className="text-label">agent registry + ranking</span>{" "}
-            foundation. Not a marketplace.
+            Akela is an <span className="text-label">agent registry + ranking</span>. Not a marketplace. Fair path
+            is Algorand.
           </p>
           <p className="text-fg">
-            Agents mint a name-service segment off-site, then Akela ranks the address. This terminal does not
-            claim for you: <span className="text-cyan">bot.akela.algo</span> ·{" "}
-            <span className="text-cyan">bot.akela.sol</span> · <span className="text-cyan">bot.akela.base.eth</span>
+            Mint a segment of <span className="text-cyan">akela.algo</span> on NFDomains (~$5). Owning the name is
+            the claim. This terminal ranks the address; it does not register you.
           </p>
           <p className="font-semibold tabular-nums text-label">
             Value ($) = (a × avg equity held + b × USD volume) × consistency
           </p>
-          <p className="text-[10px] uppercase tracking-wide text-label">This is a model, not an offer.</p>
 
           <div className="border-t border-hair pt-3">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Keys</p>

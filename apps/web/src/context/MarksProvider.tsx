@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import { MARK_LIMIT } from "../lib/mockSeries";
+import { MARK_LIMIT } from "../lib/chart";
 import { MarksContext } from "./marks";
 
 export default function MarksProvider({ children }: { children: ReactNode }) {

@@ -1,6 +1,6 @@
 import { useCountUp } from "../hooks/useMotion";
 import { formatMetricValue } from "../lib/format";
-import { sparkRows } from "../lib/mockSeries";
+import { sparkRows } from "../lib/series";
 import type { Metric, WindowId } from "../types";
 import Pane from "./Pane";
 import Sparkline from "./Sparkline";
@@ -47,9 +47,6 @@ export default function MetricPane({ metric, windowId, hero = false, className =
             </span>
           ) : null}
         </div>
-        {metric.id === "value" ? (
-          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-label">model not an offer</p>
-        ) : null}
         <Sparkline values={spark.map((point) => point.v)} color={color} className="mt-1 h-9 w-full" />
       </div>
     </Pane>
