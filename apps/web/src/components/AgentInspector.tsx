@@ -69,7 +69,7 @@ export default function AgentInspector({ agent }: { agent: AgentSummary }) {
           hint="Composite 0–100 rank: 35% activity + 40% usefulness + 25% trust."
         />
         <Hero
-          label="Cons"
+          label="Consistency"
           raw={agent.consistency}
           value={formatMult(agent.consistency)}
           tone={agent.consistency >= 1 ? "up" : "down"}
