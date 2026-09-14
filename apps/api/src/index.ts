@@ -8,16 +8,32 @@ import {
   VALUE_FORMULA,
   modelValue,
 } from "@akela/core";
-import type { ChainId } from "@akela/core";
+import type { ChainId, WindowId } from "@akela/core";
 import type { NameSystem } from "@akela/identity";
 import { Hono } from "hono";
-import { getAgent, insertClaimedAgent, pingDb, readFormulaConfig, type ClaimInput } from "./db";
+import { cors } from "hono/cors";
+import {
+  getAgent,
+  getAgentByName,
+  insertClaimedAgent,
+  listAgents,
+  pingDb,
+  readFormulaConfig,
+  type BoardId,
+  type ClaimInput,
+} from "./db";
+import { ingestAkelaSegments, readNfdRoot } from "./ingest";
 import { getPriceSource, putPriceSource } from "./prices";
 
 const CHAINS: ChainId[] = ["algorand", "solana", "base"];
 const SYSTEMS: NameSystem[] = ["nfd", "sns", "basename", "ens"];
+const BOARDS: BoardId[] = ["value", "score", "rising", "trusted", "active"];
+const WINDOWS: WindowId[] = ["24h", "7d", "30d", "since_registration"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
+
+app.use("*", cors());
 
 app.get("/health", async (c) => {
   const db = await pingDb(c.env.DB);
@@ -27,6 +43,10 @@ app.get("/health", async (c) => {
     service: "akela-api",
     db,
     prices: { bound: true, source: priceSource },
+    nfd: {
+      parent: c.env.NFD_PARENT_NAME,
+      parentAppId: c.env.NFD_PARENT_APP_ID,
+    },
   });
 });
 
@@ -63,6 +83,32 @@ app.get("/formula", async (c) => {
   });
 });
 
+app.get("/v1/nfd/root", async (c) => {
+  const root = await readNfdRoot(c.env);
+  if (!root) {
+    return c.json({ error: "akela.algo not found on NFD" }, 404);
+  }
+  return c.json(root);
+});
+
+app.post("/v1/ingest/nfd", async (c) => {
+  const result = await ingestAkelaSegments(c.env);
+  return c.json(result);
+});
+
+app.get("/v1/agents", async (c) => {
+  const boardRaw = (c.req.query("board") ?? "value") as BoardId;
+  const windowRaw = (c.req.query("window") ?? "7d") as WindowId;
+  if (!BOARDS.includes(boardRaw)) {
+    return c.json({ error: "board must be value, score, rising, trusted, or active" }, 400);
+  }
+  if (!WINDOWS.includes(windowRaw)) {
+    return c.json({ error: "window must be 24h, 7d, 30d, or since_registration" }, 400);
+  }
+  const agents = await listAgents(c.env.DB, { board: boardRaw, windowId: windowRaw });
+  return c.json({ board: boardRaw, window: windowRaw, agents });
+});
+
 app.post("/v1/agents", async (c) => {
   const body = (await c.req.json()) as Partial<ClaimInput>;
   if (!body.chain || !CHAINS.includes(body.chain)) {
@@ -87,7 +133,8 @@ app.post("/v1/agents", async (c) => {
 });
 
 app.get("/v1/agents/:id", async (c) => {
-  const agent = await getAgent(c.env.DB, c.req.param("id"));
+  const id = c.req.param("id");
+  const agent = UUID_RE.test(id) ? await getAgent(c.env.DB, id) : await getAgentByName(c.env.DB, id);
   if (!agent) {
     return c.json({ error: "not found" }, 404);
   }
@@ -103,4 +150,9 @@ app.put("/v1/prices/source", async (c) => {
   return c.json({ source: body.source.trim() });
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(_event, env) {
+    await ingestAkelaSegments(env);
+  },
+} satisfies ExportedHandler<CloudflareBindings>;

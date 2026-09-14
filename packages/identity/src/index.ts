@@ -1,6 +1,18 @@
 import type { ChainId } from "@akela/core";
 
 export type { ChainId };
+export {
+  AKELA_NFD_PARENT_APP_ID,
+  AKELA_NFD_ROOT,
+  NFD_API_BASE,
+  fetchNfdByName,
+  isAkelaSegment,
+  listSegmentsOfParent,
+  nfdSegmentLocked,
+  nfdSegmentPriceUsdCents,
+  rankedAddressFromNfd,
+} from "./nfd";
+export type { FetchFn, NfdRecord } from "./nfd";
 
 export type NameSystem = "nfd" | "sns" | "basename" | "ens";
 

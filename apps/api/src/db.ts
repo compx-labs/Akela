@@ -204,3 +204,124 @@ export async function getAgent(db: D1Database, id: string): Promise<AgentRecord 
     })),
   };
 }
+
+export async function getAgentByName(
+  db: D1Database,
+  name: string,
+  chain: ChainId = "algorand",
+): Promise<AgentRecord | null> {
+  const row = await db
+    .prepare("SELECT agent_id FROM claims WHERE chain = ? AND name = ?")
+    .bind(chain, name.trim().toLowerCase())
+    .first<{ agent_id: string }>();
+  if (!row) {
+    return null;
+  }
+  return getAgent(db, row.agent_id);
+}
+
+export type BoardId = "value" | "score" | "rising" | "trusted" | "active";
+
+export type AgentListRow = {
+  id: string;
+  name: string;
+  address: string;
+  valueUsd: number;
+  score: number;
+  activity: number;
+  usefulness: number;
+  trust: number;
+  rising7d: number;
+  eligible: boolean;
+};
+
+const BOARD_ORDER: Record<BoardId, string> = {
+  value: "value_usd DESC",
+  score: "score DESC",
+  rising: "rising_7d DESC",
+  trusted: "trust DESC",
+  active: "activity DESC",
+};
+
+export async function listAgents(
+  db: D1Database,
+  opts?: { board?: BoardId; windowId?: WindowId; chain?: ChainId },
+): Promise<AgentListRow[]> {
+  const board = opts?.board ?? "value";
+  const windowId = opts?.windowId ?? "7d";
+  const chain = opts?.chain ?? "algorand";
+  const order = BOARD_ORDER[board];
+  const { results } = await db
+    .prepare(
+      `SELECT a.id AS id, c.name AS name, c.address AS address,
+              COALESCE(s.value_usd, 0) AS value_usd,
+              COALESCE(s.score, 0) AS score,
+              COALESCE(s.activity, 0) AS activity,
+              COALESCE(s.usefulness, 0) AS usefulness,
+              COALESCE(s.trust, 0) AS trust,
+              COALESCE(s.rising_7d, 0) AS rising_7d,
+              COALESCE(s.eligible, 0) AS eligible
+       FROM claims c
+       JOIN agents a ON a.id = c.agent_id
+       LEFT JOIN scores s ON s.agent_id = a.id AND s.window_id = ?
+       WHERE c.chain = ?
+       ORDER BY ${order}`,
+    )
+    .bind(windowId, chain)
+    .all<{
+      id: string;
+      name: string;
+      address: string;
+      value_usd: number;
+      score: number;
+      activity: number;
+      usefulness: number;
+      trust: number;
+      rising_7d: number;
+      eligible: number;
+    }>();
+
+  return (results ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    valueUsd: row.value_usd,
+    score: row.score,
+    activity: row.activity,
+    usefulness: row.usefulness,
+    trust: row.trust,
+    rising7d: row.rising_7d,
+    eligible: row.eligible === 1,
+  }));
+}
+
+export async function upsertNfdSegment(
+  db: D1Database,
+  input: { name: string; address: string; proof: string },
+): Promise<{ id: string; created: boolean }> {
+  const name = input.name.trim().toLowerCase();
+  const now = new Date().toISOString();
+  const existing = await db
+    .prepare("SELECT id, agent_id FROM claims WHERE chain = 'algorand' AND name = ?")
+    .bind(name)
+    .first<{ id: string; agent_id: string }>();
+
+  if (existing) {
+    await db.batch([
+      db
+        .prepare("UPDATE claims SET address = ?, proof = ? WHERE id = ?")
+        .bind(input.address, input.proof, existing.id),
+      db.prepare("UPDATE agents SET updated_at = ? WHERE id = ?").bind(now, existing.agent_id),
+    ]);
+    return { id: existing.agent_id, created: false };
+  }
+
+  const id = await insertClaimedAgent(db, {
+    chain: "algorand",
+    system: "nfd",
+    name,
+    address: input.address,
+    proof: input.proof,
+  });
+  return { id, created: true };
+}

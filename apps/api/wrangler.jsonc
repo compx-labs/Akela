@@ -8,6 +8,14 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "vars": {
+    "NFD_API_BASE": "https://api.nf.domains",
+    "NFD_PARENT_NAME": "akela.algo",
+    "NFD_PARENT_APP_ID": "3698150696"
+  },
+  "triggers": {
+    "crons": ["0 * * * *"]
+  },
   "d1_databases": [
     {
       "binding": "DB",
